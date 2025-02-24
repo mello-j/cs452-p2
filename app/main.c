@@ -10,6 +10,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include "../src/lab.h"
+
 static void explain_waitpid(int status)
 {
     if (!WIFEXITED(status))
