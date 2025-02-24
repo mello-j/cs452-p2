@@ -1,11 +1,18 @@
 #include "lab.h"
 #include <stdlib.h>
+#include <string.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include <readline/readline.h>
+#include <readline/history.h>
+#include <signal.h>
+#include <pwd.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <fcntl.h>
 #include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
-#include <readline/readline.h>
-#include <readline/history.h>
 
 /**
  * Task 2 - Print Version
