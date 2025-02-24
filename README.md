@@ -1,3 +1,13 @@
+# CS452 Project 2
+Justin Mello
+Spring 2025
+
+# Overview
+
+
+# Reflection
+
+
 # Makefile Project Template
 
 Steps to configure, build, run, and test the project.
@@ -18,12 +28,4 @@ make check
 
 ```bash
 make clean
-```
-
-## Install Dependencies
-
-In order to use git send-mail you need to run the following command:
-
-```bash
-make install-deps
 ```
