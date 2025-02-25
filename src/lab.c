@@ -80,33 +80,41 @@ void cmd_free(char **line){
  * This helps to ensure that the command is correctly parsed
  * @param line - the command arguments
  * @return - the command arguments with white space removed
+ * 
+ * I was written with copilot's help
  */
 char *trim_white(char *line){
     if (line == NULL){
-        return;
+        return NULL;
     }
 
-    // If line is empty, return
-    if (*line == '\0'){
-        return line;
-    }
-
-    // Trim the leading white space
-    while (isspace((unsigned char)*line)){
-        line++;
-    }
-
-    // Trim the trailing whitespace
-    char *end = line + strlen(line) - 1;
-    while (end > line && isspace((unsigned char)*end)) {
-        end--;
+    // Trim leading whitespace
+    char *start = line;
+    while (*start && isspace((unsigned char)*start)) {
+        start++;
     }
     
-    // Null-terminate the string directly after the last non-whitespace character
-    *(end + 1) = '\0';
+    // If string is all whitespace, make it an empty string
+    if (*start == '\0') {
+        *line = '\0';
+        return line;
+    }
+    
+    // Move the trimmed string to the beginning of the original buffer
+    if (start != line) {
+        size_t len = strlen(start);
+        memmove(line, start, len + 1);  // +1 to include the null terminator
+    }
+    
+    // Trim trailing whitespace
+    char *end = line + strlen(line) - 1;
+    while (end > line && isspace((unsigned char)*end)) {
+        *end-- = '\0';
+    }
     
     return line;
 }
+
 
 bool do_builtin(struct shell *sh, char **argv){
     // Stub implementation
@@ -120,9 +128,21 @@ void sh_init(struct shell *sh){
     UNUSED(sh);
 }
 
+/**
+ * Task 4 - Destroy Shell
+ * This function will free the memory allocated for the shell
+ * @param sh - the shell
+ */
 void sh_destroy(struct shell *sh){
-    // Stub implementation
-    UNUSED(sh);
+   if (sh == NULL){
+       return;
+   }
+
+   // free prompt if used
+   if (sh->prompt != NULL){
+       free(sh->prompt);
+       sh->prompt = NULL;
+   }
 }
 
 /**
