@@ -115,17 +115,54 @@ char *trim_white(char *line){
     return line;
 }
 
-
+/**
+ * Task 3,4,5...- Execute Command
+ * This function will execute the command
+ * @param sh - the shell
+ * @param argv - the command arguments
+ * @return - true if the command is a built-in command, false otherwise
+ */
 bool do_builtin(struct shell *sh, char **argv){
-    // Stub implementation
-    UNUSED(sh);
-    UNUSED(argv);
-    return false;
+    if (!argv || !argv[0]){
+        return false;
+    }
+
+    // watch for exit command
+    if (strcmp(argv[0], "exit") == 0){
+        // free the memory allocated for the shell
+        sh_destroy(sh);
+        // exit the program...no return statement as unreachable code
+        exit(0);
+    }
+
+    // watch for cd command
+    if (strcmp(argv[0], "cd") == 0){
+        // change directory
+        change_dir(argv);
+        return true;
+    }
+
+    // watch for history command
+    if (strcmp(argv[0], "history") == 0){
+        // print the history
+        HIST_ENTRY **hist_list = history_list();
+        if (hist_list){
+            for (int i = 0; hist_list[i] != NULL; i++){
+                printf("%d: %s\n", i, hist_list[i]->line);
+            }
+        }
+        return true;
+    }
+
 }
 
+/**
+ * Task 4 - Initialize Shell
+ * This function will initialize the shell
+ * @param sh - the shell
+ */
 void sh_init(struct shell *sh){
-    // Stub implementation
-    UNUSED(sh);
+    sh->prompt = get_prompt("MY_PROMPT");
 }
 
 /**
@@ -143,6 +180,9 @@ void sh_destroy(struct shell *sh){
        free(sh->prompt);
        sh->prompt = NULL;
    }
+
+   // Clear the readline history
+    clear_history();
 }
 
 /**
