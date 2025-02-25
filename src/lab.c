@@ -42,9 +42,22 @@ char **cmd_parse(char const *line) {
     return NULL;
 }
 
+/**
+ * Task 3 - Free Command
+ * This function will free the memory allocated for command arguments.access
+ * @param line - the command arguments
+ */
 void cmd_free(char **line) {
-    // Stub implementation
-    UNUSED(line);
+   if (line == NULL){
+         return;
+   }
+
+   // Free each argument
+   for (size_t i = 0; line[i] != NULL; i++){
+       free(line[i]);
+   }
+
+   free(line);
 }
 
 char *trim_white(char *line) {
