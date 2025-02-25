@@ -44,12 +44,24 @@ char *get_prompt(const char *env){
     }
 }
 
+/**
+ * Task 5 - Change Directory
+ * This function will change the current working directory
+ * @param dir - the directory to change to
+ * @return - 0 if successful, -1 otherwise
+ */
 int change_dir(char **dir){
     // Stub implementation
     UNUSED(dir);
     return 0;
 }
 
+/**
+ * Task 3,4,5 - Parse Command
+ * This function will parse the command arguments
+ * @param line - the command arguments
+ * @return - the parsed command arguments
+ */
 char **cmd_parse(char const *line){
     // Stub implementation
     UNUSED(line);
@@ -153,7 +165,7 @@ bool do_builtin(struct shell *sh, char **argv){
         }
         return true;
     }
-
+    return false;
 }
 
 /**
