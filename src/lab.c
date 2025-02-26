@@ -20,11 +20,12 @@
  * It will output the current version of the shell, and exit the program.
  */
 void print_vers(){
+    //WOW Copilot wrote this whole function :) except exit 0
     printf("Justin Shell version: %d.%d\n", lab_VERSION_MAJOR, lab_VERSION_MINOR);
     exit(0);
 }
 
-/**
+  /**
  * Task 4 - Get Prompt
  * This function will return the prompt to be displayed in the shell.
  * If the environment variable is not set, the default prompt will be used.
@@ -34,14 +35,7 @@ void print_vers(){
 char *get_prompt(const char *env){
     //get the environment variable
     char *prompt = getenv(env);
-
-    if (prompt != NULL) {
-        //prompt exists so return it
-        return strdup(prompt);     
-    } else {
-          //no prompt so return default
-          return strdup("justinshell>");
-    }
+    return strdup(prompt ? prompt : "shell>"); // Directly return strdup
 }
 
 /**
@@ -51,8 +45,30 @@ char *get_prompt(const char *env){
  * @return - 0 if successful, -1 otherwise
  */
 int change_dir(char **dir){
-    // Stub implementation
-    UNUSED(dir);
+    char *path = NULL;
+    
+    // This handles our home directory
+    if (dir == NULL || dir[1] == NULL) {
+        path = getenv("HOME");
+        if (!path) {
+            struct passwd *pw = getpwuid(getuid());
+            if (pw) {
+                path = pw->pw_dir;
+            } else {
+                fprintf(stderr, "cd: Cannot find home directory\n");
+                return -1;
+            }
+        }
+    } else {
+        path = dir[1];
+    }
+    
+    // Change directory and handle errors
+    if (chdir(path) != 0) {
+        perror("cd");
+        return -1;
+    }
+    
     return 0;
 }
 
@@ -63,9 +79,55 @@ int change_dir(char **dir){
  * @return - the parsed command arguments
  */
 char **cmd_parse(char const *line){
-    // Stub implementation
-    UNUSED(line);
-    return NULL;
+   if (!line){
+       return NULL;
+   }
+
+    // Get maximum number of arguments
+    long arg_max = sysconf(_SC_ARG_MAX);
+
+    // Allocate space for arguments (plus one for NULL terminator)
+    char **argv = malloc(sizeof(char*) * arg_max);
+    if (!argv) {
+        perror("Memory allocation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    char *line_copy = strdup(line);
+    if (!line_copy) {
+        perror("strdup failed");
+        free(argv);
+        return NULL;
+    }
+
+    // Parse the line
+    int argc = 0;
+    char *token = strtok(line_copy, " \t\n");
+
+    // Process each token
+    while (token != NULL && argc < arg_max - 1) {
+        argv[argc] = strdup(token);
+        if (argv[argc] == NULL) {
+            perror("Memory allocation failed");
+            // Free allocated memory
+            for (int i = 0; i < argc; i++) {
+                free(argv[i]);
+            }
+            free(argv);
+            free(line_copy);
+            return NULL;
+        }
+        argc++;
+        token = strtok(NULL, " \t\n");
+    }
+    
+    // null terminate array
+    argv[argc] = NULL;
+    
+    // Free the copy
+    free(line_copy);
+    
+    return argv;
 }
 
 /**
@@ -174,7 +236,43 @@ bool do_builtin(struct shell *sh, char **argv){
  * @param sh - the shell
  */
 void sh_init(struct shell *sh){
+    if (!sh){
+        return; // Return early if null pointer
+    }
+
+    // Get prompt from environment or use default
     sh->prompt = get_prompt("MY_PROMPT");
+    
+    // Get terminal information for job control
+    sh->shell_terminal = STDIN_FILENO;
+    sh->shell_is_interactive = isatty(sh->shell_terminal);
+    
+    if (sh->shell_is_interactive) {
+        // Loop until we are in the foreground
+        while (tcgetpgrp(sh->shell_terminal) != (sh->shell_pgid = getpgrp())) {
+            kill(-sh->shell_pgid, SIGTTIN);
+        }
+        
+        // Ignore interactive and job-control signals
+        signal(SIGINT, SIG_IGN);   
+        signal(SIGQUIT, SIG_IGN);  
+        signal(SIGTSTP, SIG_IGN);  
+        signal(SIGTTIN, SIG_IGN);
+        signal(SIGTTOU, SIG_IGN);
+        
+        // Put ourselves in our own process group
+        sh->shell_pgid = getpid();
+        if (setpgid(sh->shell_pgid, sh->shell_pgid) < 0) {
+            perror("Couldn't put the shell in its own process group");
+            exit(1);
+        }
+        
+        // Grab control of the terminal
+        tcsetpgrp(sh->shell_terminal, sh->shell_pgid);
+        
+        // Save default terminal attributes
+        tcgetattr(sh->shell_terminal, &sh->shell_tmodes);
+    }
 }
 
 /**

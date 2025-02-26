@@ -1,14 +1,49 @@
 #include <string.h>
 #include "harness/unity.h"
 #include "../src/lab.h"
-void setUp(void)
-{
-    // set stuff up here
+
+void setUp(void) {
+    setenv("MY_PROMPT", "shell>", 1);
 }
-void tearDown(void)
-{
-    // clean stuff up here
+void tearDown(void) {
+    unsetenv("MY_PROMPT");
 }
+
+/**
+ * Test empty command parsing
+ */
+void test_cmd_parse_empty(void)
+{
+    char **rval = cmd_parse("");
+    TEST_ASSERT_TRUE(rval);  // Should return a valid pointer
+    TEST_ASSERT_FALSE(rval[0]); // First element should be NULL
+    cmd_free(rval);
+}
+
+/**
+* Test command parsing with multiple spaces
+*/
+void test_cmd_parse_multiple_spaces(void)
+{
+   char **rval = cmd_parse("ls  -a    -l");
+   TEST_ASSERT_TRUE(rval);
+   TEST_ASSERT_EQUAL_STRING("ls", rval[0]);
+   TEST_ASSERT_EQUAL_STRING("-a", rval[1]);
+   TEST_ASSERT_EQUAL_STRING("-l", rval[2]);
+   TEST_ASSERT_EQUAL_STRING(NULL, rval[3]);
+   cmd_free(rval);
+}
+
+/**
+ * Test handling of NULL input to cmd_parse
+ */
+void test_cmd_parse_null(void)
+{
+    char **rval = cmd_parse(NULL);
+    TEST_ASSERT_NULL(rval);
+}
+
+
 void test_cmd_parse2(void)
 {
     // The string we want to parse from the user.
@@ -157,5 +192,12 @@ int main(void)
     RUN_TEST(test_get_prompt_custom);
     RUN_TEST(test_ch_dir_home);
     RUN_TEST(test_ch_dir_root);
+
+
+    // New tests
+    RUN_TEST(test_cmd_parse_empty);
+    RUN_TEST(test_cmd_parse_multiple_spaces);
+    RUN_TEST(test_cmd_parse_null);
+
     return UNITY_END();
 }
