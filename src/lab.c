@@ -281,7 +281,7 @@ void sh_init(struct shell *sh){
  * @param sh - the shell
  */
 void sh_destroy(struct shell *sh){
-   if (sh == NULL){
+   if (!sh){
        return;
    }
 
