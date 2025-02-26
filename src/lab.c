@@ -1,7 +1,6 @@
 #include "lab.h"
 #include <stdlib.h>
 #include <string.h>
-#include <stdlib.h>
 #include <stdbool.h>
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -15,7 +14,6 @@
 #include <unistd.h>
 
 /**
- * Task 2 - Print Version
  * This function is called with a cmd-line argument "v".
  * It will output the current version of the shell, and exit the program.
  */
@@ -26,7 +24,6 @@ void print_vers(){
 }
 
   /**
- * Task 4 - Get Prompt
  * This function will return the prompt to be displayed in the shell.
  * If the environment variable is not set, the default prompt will be used.
  * @param env - the environment variable
@@ -34,12 +31,10 @@ void print_vers(){
  */
 char *get_prompt(const char *env){
     //get the environment variable
-    char *prompt = getenv(env);
-    return strdup(prompt ? prompt : "shell>"); // Directly return strdup
+    return strdup(getenv(env) ? getenv(env) : "shell>");
 }
 
 /**
- * Task 5 - Change Directory
  * This function will change the current working directory
  * @param dir - the directory to change to
  * @return - 0 if successful, -1 otherwise
@@ -49,9 +44,10 @@ int change_dir(char **dir){
     
     // This handles our home directory
     if (dir == NULL || dir[1] == NULL) {
-        path = getenv("HOME");
+        path = getenv("HOME"); //grab the home dir
         if (!path) {
-            struct passwd *pw = getpwuid(getuid());
+            // If HOME is not set, get the home directory from passwd
+            struct passwd *pw = getpwuid(getuid()); 
             if (pw) {
                 path = pw->pw_dir;
             } else {
@@ -60,6 +56,7 @@ int change_dir(char **dir){
             }
         }
     } else {
+        // If a directory is specified, I guess we should use it
         path = dir[1];
     }
     
@@ -73,7 +70,6 @@ int change_dir(char **dir){
 }
 
 /**
- * Task 3,4,5 - Parse Command
  * This function will parse the command arguments
  * @param line - the command arguments
  * @return - the parsed command arguments
@@ -86,18 +82,21 @@ char **cmd_parse(char const *line){
     // Get maximum number of arguments
     long arg_max = sysconf(_SC_ARG_MAX);
 
-    // Allocate space for arguments (plus one for NULL terminator)
+    // Allocate space for arguments 
     char **argv = malloc(sizeof(char*) * arg_max);
     if (!argv) {
         perror("Memory allocation failed");
+        // Can't continue so exit
         exit(EXIT_FAILURE);
     }
 
+    // Copy the line to avoid modifying the original
     char *line_copy = strdup(line);
     if (!line_copy) {
         perror("strdup failed");
         free(argv);
-        return NULL;
+        // Can't continue so exit
+        exit(EXIT_FAILURE);
     }
 
     // Parse the line
@@ -115,8 +114,10 @@ char **cmd_parse(char const *line){
             }
             free(argv);
             free(line_copy);
-            return NULL;
+            // Exit if memory allocation fails
+            exit(EXIT_FAILURE);
         }
+        // Increment argument count
         argc++;
         token = strtok(NULL, " \t\n");
     }
@@ -131,11 +132,11 @@ char **cmd_parse(char const *line){
 }
 
 /**
- * Task 3 - Free Command
  * This function will free the memory allocated for command arguments.access
  * @param line - the command arguments
  */
 void cmd_free(char **line){
+    // Check if line is NULL if so, nothing to do here...
     if (line == NULL){
         return;
     }
@@ -145,11 +146,11 @@ void cmd_free(char **line){
         free(line[i]);
     }
 
+    //you are free now
     free(line);
 }
 
 /**
- * Task 3 - Trim white space
  * This function will remove white space from a string
  * This helps to ensure that the command is correctly parsed
  * @param line - the command arguments
@@ -190,7 +191,6 @@ char *trim_white(char *line){
 }
 
 /**
- * Task 3,4,5...- Execute Command
  * This function will execute the command
  * @param sh - the shell
  * @param argv - the command arguments
@@ -205,20 +205,20 @@ bool do_builtin(struct shell *sh, char **argv){
     if (strcmp(argv[0], "exit") == 0){
         // free the memory allocated for the shell
         sh_destroy(sh);
-        // exit the program...no return statement as unreachable code
+        // exit the program...
         exit(0);
     }
 
     // watch for cd command
     if (strcmp(argv[0], "cd") == 0){
-        // change directory
+        //if seen, change directory
         change_dir(argv);
         return true;
     }
 
     // watch for history command
     if (strcmp(argv[0], "history") == 0){
-        // print the history
+        //if seen, print the history
         HIST_ENTRY **hist_list = history_list();
         if (hist_list){
             for (int i = 0; hist_list[i] != NULL; i++){
@@ -227,20 +227,20 @@ bool do_builtin(struct shell *sh, char **argv){
         }
         return true;
     }
+    // not a command we implemented...
     return false;
 }
 
 /**
- * Task 4 - Initialize Shell
  * This function will initialize the shell
  * @param sh - the shell
  */
 void sh_init(struct shell *sh){
     if (!sh){
-        return; // Return early if null pointer
+        return; // Return early if null
     }
 
-    // Get prompt from environment or use default
+    // Get prompt from environment or use default prompt
     sh->prompt = get_prompt("MY_PROMPT");
     
     // Get terminal information for job control
@@ -248,12 +248,11 @@ void sh_init(struct shell *sh){
     sh->shell_is_interactive = isatty(sh->shell_terminal);
     
     if (sh->shell_is_interactive) {
-        // Loop until we are in the foreground
         while (tcgetpgrp(sh->shell_terminal) != (sh->shell_pgid = getpgrp())) {
             kill(-sh->shell_pgid, SIGTTIN);
         }
         
-        // Ignore interactive and job-control signals
+        // Ignore these signals
         signal(SIGINT, SIG_IGN);   
         signal(SIGQUIT, SIG_IGN);  
         signal(SIGTSTP, SIG_IGN);  
@@ -276,7 +275,6 @@ void sh_init(struct shell *sh){
 }
 
 /**
- * Task 4 - Destroy Shell
  * This function will free the memory allocated for the shell
  * @param sh - the shell
  */
@@ -291,12 +289,11 @@ void sh_destroy(struct shell *sh){
        sh->prompt = NULL;
    }
 
-   // Clear the readline history
+   // Clear the readline history?
     clear_history();
 }
 
 /**
- * Task 2 & 4 - Parse Arguments
  * This function will parse the command line arguments
  * @param argc - the number of arguments
  * @param argv - the arguments
@@ -309,12 +306,13 @@ void parse_args(int argc, char **argv){
     while ((opt = getopt(argc, argv, "v")) != -1){
          switch (opt){
               case 'v':
+                // print the version and exit
                 print_vers();
                 break;
               default:
-                  // usage message for invalid arguments
-                  fprintf(stderr, "Usage: %s [-v]\n", argv[0]);
-                  exit(EXIT_FAILURE);
+                // usage message for invalid arguments
+                fprintf(stderr, "Usage: %s [-v]\n", argv[0]);
+                exit(EXIT_FAILURE);
          }
     }
 }
