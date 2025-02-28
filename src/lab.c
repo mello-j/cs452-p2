@@ -31,7 +31,43 @@ void print_vers(){
  */
 char *get_prompt(const char *env){
     //get the environment variable
-    return strdup(getenv(env) ? getenv(env) : "shell>");
+    /**NOTES FROM REVIEW WITH SHANE
+    *ORDER OF OPS FOR TERNARY OPERATOR
+    *Ternary Operator evaluates from right to left, so
+    *the first item evaluating is condition, if true, then exp1, else expr2
+    *DON'T USE TERNARY OPERATORS :) 
+    *HELPS WITH BETTER DEBUGGING
+    *IF YOU HAVE A BUG, YOU CAN'T SEE THE VALUE OF THE VARIABLE
+    // OLD CODE
+    // return strdup(getenv(env) ? getenv(env) : "shell>");
+    **/
+
+    //Updated Code
+    char *rval = NULL;
+    const char *tmp= getenv(env);
+    const char *prompt;
+
+    if (!tmp){
+        prompt = "shell>";
+    }
+    else{
+        prompt = tmp;
+    }
+
+    int n = strlen(prompt) + 1;
+
+    //allocate memory
+    rval = (char *)malloc(n);
+    if (!rval){
+        perror("Memory allocation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    //copy the prompt
+    strncpy(rval, prompt, n);
+    rval[n-1] = '\0';
+
+    return rval;
 }
 
 /**
@@ -47,7 +83,7 @@ int change_dir(char **dir){
         path = getenv("HOME"); //grab the home dir
         if (!path) {
             // If HOME is not set, get the home directory from passwd
-            struct passwd *pw = getpwuid(getuid()); 
+            struct passwd *pw = getpwuid(getuid()); //check the man pages for getpwuid
             if (pw) {
                 path = pw->pw_dir;
             } else {
@@ -101,7 +137,8 @@ char **cmd_parse(char const *line){
 
     // Parse the line
     int argc = 0;
-    char *token = strtok(line_copy, " \t\n");
+    char *saveptr; // For strtok_r
+    char *token = strtok_r(line_copy, " \t\n", &saveptr);
 
     // Process each token
     while (token != NULL && argc < arg_max - 1) {
@@ -119,7 +156,7 @@ char **cmd_parse(char const *line){
         }
         // Increment argument count
         argc++;
-        token = strtok(NULL, " \t\n");
+        token = strtok_r(NULL, " \t\n", &saveptr);
     }
     
     // null terminate array
@@ -247,6 +284,8 @@ void sh_init(struct shell *sh){
     sh->shell_terminal = STDIN_FILENO;
     sh->shell_is_interactive = isatty(sh->shell_terminal);
     
+    //allows shell to work correctly...never not gonna be interactive, one process at a time
+    //non-interactive ex is a server..
     if (sh->shell_is_interactive) {
         while (tcgetpgrp(sh->shell_terminal) != (sh->shell_pgid = getpgrp())) {
             kill(-sh->shell_pgid, SIGTTIN);
@@ -284,13 +323,13 @@ void sh_destroy(struct shell *sh){
    }
 
    // free prompt if used
-   if (sh->prompt != NULL){
+   if (sh->prompt){
        free(sh->prompt);
-       sh->prompt = NULL;
    }
 
    // Clear the readline history?
     clear_history();
+    exit(EXIT_SUCCESS);
 }
 
 /**
